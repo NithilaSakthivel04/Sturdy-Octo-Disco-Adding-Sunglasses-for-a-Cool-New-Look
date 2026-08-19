@@ -107,4 +107,6 @@ plt.tight_layout()
 plt.show()
 ```
 ## output:
+<img width="686" height="871" alt="Screenshot 2026-08-19 193932" src="https://github.com/user-attachments/assets/5440b381-5166-4c94-a5d0-3c05e643e0c9" />
+
 <img width="884" height="525" alt="Screenshot 2026-08-19 193953" src="https://github.com/user-attachments/assets/65c64b01-6d44-4923-954a-b027b2ac5bf3" />

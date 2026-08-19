@@ -30,76 +30,81 @@ Welcome to Sturdy Octo Disco, a fun and creative project designed to overlay sun
 ## program
 ```
 import cv2
-import numpy as np
 import matplotlib.pyplot as plt
 
+photo = cv2.imread("photo.jpeg")
 
-faceImage = cv2.imread('ws.jpg')
-plt.imshow(faceImage[:,:,::-1]);plt.title("Face")
+glasses = cv2.imread("sunglass.jpg", cv2.IMREAD_UNCHANGED)
 
+print("Photo shape:", photo.shape)
+print("Glasses shape:", glasses.shape)
+plt.figure(figsize=(6, 8))
 
-faceImage.shape
+plt.imshow(cv2.cvtColor(photo, cv2.COLOR_BGR2RGB))
+plt.axis("off")
 
-glassPNG = cv2.imread('sunglass.png',-1)
-plt.imshow(glassPNG[:,:,::-1]);plt.title("glassPNG")
+plt.show()
+glasses_crop = glasses[260:600, :]
+hsv = cv2.cvtColor(glasses_crop, cv2.COLOR_BGR2HSV)
 
+mask = cv2.inRange(
+    hsv,
+    np.array([0, 25, 40]),
+    np.array([179, 255, 255])
+)
+kernel = np.ones((3, 3), np.uint8)
+mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
+mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
+points = cv2.findNonZero(mask)
 
-glassPNG = cv2.resize(glassPNG,(500,400))
-print("image Dimension ={}".format(glassPNG.shape))
+x, y, w, h = cv2.boundingRect(points)
 
+glasses_crop = glasses_crop[y:y+h, x:x+w]
+mask = mask[y:y+h, x:x+w]
 
-glassBGR = glassPNG[:,:,0:3]
-glassMask1 = glassPNG[:,:,3]
+new_width = 430
+new_height = int(h * new_width / w)
 
+glasses_resized = cv2.resize(
+    glasses_crop,
+    (new_width, new_height)
+)
 
-plt.figure(figsize=[15,15])
-plt.subplot(121);plt.imshow(glassBGR[:,:,::-1]);plt.title('Sunglass Color channels');
-plt.subplot(122);plt.imshow(glassMask1,cmap='gray');plt.title('Sunglass Alpha channel');
+mask_resized = cv2.resize(
+    mask,
+    (new_width, new_height)
+)
+x1 = 355
+y1 = 455
 
+x2 = x1 + new_width
+y2 = y1 + new_height
+roi = photo[y1:y2, x1:x2]
+alpha = mask_resized.astype(float) / 255.0
+alpha = alpha[:, :, np.newaxis]
+blended = (
+    glasses_resized.astype(float) * alpha
+    + roi.astype(float) * (1 - alpha)
+)
 
-faceWithGlassesNaive = faceImage.copy()
+blended = blended.astype(np.uint8)
 
-faceWithGlassesNaive[230:630,250:750]=glassBGR
+output = photo.copy()
+output[y1:y2, x1:x2] = blended
+plt.figure(figsize=(12, 6))
 
-plt.imshow(faceWithGlassesNaive[...,::-1])
+plt.subplot(1, 2, 1)
+plt.imshow(cv2.cvtColor(photo, cv2.COLOR_BGR2RGB))
+plt.title("Original")
+plt.axis("off")
 
+plt.subplot(1, 2, 2)
+plt.imshow(cv2.cvtColor(output, cv2.COLOR_BGR2RGB))
+plt.title("Sunglasses Automatically Positioned")
+plt.axis("off")
 
-glassMask = cv2.merge((glassMask1,glassMask1,glassMask1))
-
-glassMask = np.uint8(glassMask/255)
-
-faceWithGlassesArithmetic = faceImage.copy()
-
-eyeROI= faceWithGlassesArithmetic[230:630,250:750]
-
-maskedEye = cv2.multiply(eyeROI,(1-  glassMask ))
-
-maskedGlass = cv2.multiply(glassBGR,glassMask)
-
-eyeRoiFinal = cv2.add(maskedEye, maskedGlass)
-
-plt.figure(figsize=[20,20])
-plt.subplot(131);plt.imshow(maskedEye[...,::-1]);plt.title("Masked Eye Region")
-plt.subplot(132);plt.imshow(maskedGlass[...,::-1]);plt.title("Masked Sunglass Region")
-plt.subplot(133);plt.imshow(eyeRoiFinal[...,::-1]);plt.title("Augmented Eye and Sunglass")
-
-
-faceWithGlassesArithmetic[230:630,250:750]=eyeRoiFinal
-
-plt.figure(figsize=[20,20]);
-plt.subplot(121);plt.imshow(faceImage[:,:,::-1]); plt.title("Original Image");
-plt.subplot(122);plt.imshow(faceWithGlassesArithmetic[:,:,::-1]);plt.title("With Sunglasses");
-
+plt.tight_layout()
+plt.show()
 ```
 ## output:
-![image](https://github.com/user-attachments/assets/aef4004e-4717-49ec-b13f-0c08d311a6b9)
-
-![image](https://github.com/user-attachments/assets/56ec2b71-1082-4b7d-9253-1ad9c9705034)
-
-![image](https://github.com/user-attachments/assets/ccd38b87-184e-4df4-b0e9-5b6682214b36)
-
-![image](https://github.com/user-attachments/assets/083c3e2e-aa77-4159-bc6f-b112ad5dd248)
-
-![image](https://github.com/user-attachments/assets/735765fb-08bf-4a5c-afe6-df24f44c1797)
-
-![image](https://github.com/user-attachments/assets/659f946d-8723-4909-bc89-89cb8357f83a)
+<img width="884" height="525" alt="Screenshot 2026-08-19 193953" src="https://github.com/user-attachments/assets/65c64b01-6d44-4923-954a-b027b2ac5bf3" />
